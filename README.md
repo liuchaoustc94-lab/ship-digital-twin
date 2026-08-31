@@ -3,6 +3,18 @@
 一个纯 Web 端的 **Ship Digital Mock-up & Engineering Inspection Platform**（船舶数字样机与工程检验平台）。
 无需构建工具、无需 Node —— Three.js 由 CDN 动态加载，Python 内置 HTTP 服务即可运行。
 
+## 项目简介
+
+OCEAN·DT 面向船舶方案评审、工程检查、系统教学和数字样机展示，将可交互的三维船舶模型与结构树、BOM、属性、剖切、爆炸、X-Ray、管路流动和推进系统演示连接起来。当前版本以 Blender 4.5.10 LTS 生成的精细船模作为默认活动模型，平台中的搜索、选中、相机聚焦和动画功能都通过模型工程元数据寻址，确保“看到的模型”和“操作的功能”保持一致。
+
+## 展示页面
+
+- [打开在线展示页面（GitHub Pages）](https://liuchaoustc94-lab.github.io/ship-digital-twin/)
+- [查看 GitHub 项目仓库](https://github.com/liuchaoustc94-lab/ship-digital-twin)
+- 本地预览：运行下方命令后打开 `http://localhost:8021`
+
+![OCEAN·DT Blender 精细船舶模型预览](models/ship-blender-preview.png)
+
 ![tech](https://img.shields.io/badge/Three.js-0.170-049?logo=three.js) ![tech](https://img.shields.io/badge/ES_Modules-原生-29b) ![tech](https://img.shields.io/badge/零构建-纯静态-06c)
 
 ## 运行
