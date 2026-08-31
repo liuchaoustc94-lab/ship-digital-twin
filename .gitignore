@@ -1,0 +1,16 @@
+# Local Blender runtime is installed separately and is not project source.
+tools/blender-runtime/
+
+# Blender automatic backup files.
+*.blend1
+*.blend2
+
+# Generated local logs and Python caches.
+tools/*.log
+__pycache__/
+*.py[cod]
+
+# OS/editor noise.
+.DS_Store
+Thumbs.db
+.vscode/

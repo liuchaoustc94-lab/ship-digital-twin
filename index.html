@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCEAN·DT — 船舶 3D 数字样机与工程分析平台</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚢</text></svg>">
+<link rel="stylesheet" href="css/app.css?v=8">
+<script>
+window.addEventListener('error',function(e){
+  var ld=document.getElementById('loader');
+  if(!ld||ld.classList.contains('hidden'))return;   // 仅加载阶段展示
+  var msg=(e.message||e.target&&e.target.src||String(e))+' @'+((e.filename||'').split('/').pop()||'?')+':'+(e.lineno||'');
+  document.title='ERR: '+msg;
+  var m=document.getElementById('loaderMsg');
+  if(m)m.innerHTML='脚本错误: '+msg;
+});
+</script>
+</head>
+<body>
+
+<!-- ══════════ 顶部工具栏 ══════════ -->
+<header id="topbar">
+  <div id="logo"><span class="lg-ic">▰▮▰</span> OCEAN<span class="lg-sub">·DT</span>
+    <span class="lg-tip">SHIP DIGITAL MOCK-UP PLATFORM</span>
+  </div>
+
+  <nav id="menus">
+    <div class="menu"><button class="mbtn">视图 <i>VIEW</i></button>
+      <div class="mdd">
+        <button data-cmd="home">主视角 <span>Home</span></button>
+        <button data-cmd="fit">适配视图 <span>Fit · F</span></button>
+        <hr>
+        <button data-cmd="vTop">俯视 <span>Top</span></button>
+        <button data-cmd="vBottom">仰视 <span>Bottom</span></button>
+        <button data-cmd="vBow">艏视 <span>Bow</span></button>
+        <button data-cmd="vStern">艉视 <span>Stern</span></button>
+        <button data-cmd="vPort">左舷 <span>Port</span></button>
+        <button data-cmd="vStbd">右舷 <span>Starboard</span></button>
+        <hr>
+        <button data-cmd="ortho">正交 / 透视 <span>Ortho ⇄ Persp</span></button>
+        <button data-cmd="axes">坐标轴 <span>Axes</span></button>
+        <button data-cmd="water">水面 <span>Sea</span></button>
+        <button data-cmd="resetAll">复位全部 <span>Reset · R</span></button>
+      </div>
+    </div>
+    <div class="menu"><button class="mbtn">显示 <i>DISPLAY</i></button>
+      <div class="mdd">
+        <button data-cmd="dSolid">实体 <span>Solid</span></button>
+        <button data-cmd="dWire">线框 <span>Wireframe</span></button>
+        <button data-cmd="xray">X-Ray 透视 <span>· X</span></button>
+        <button data-cmd="popXray">外壳透明度… <span>Hull Opacity</span></button>
+        <button data-cmd="dGhost">幽灵模式 <span>Ghost</span></button>
+        <hr>
+        <button data-cmd="dReset">复原显示 <span>Restore</span></button>
+      </div>
+    </div>
+    <div class="menu"><button class="mbtn">分析 <i>ANALYSIS</i></button>
+      <div class="mdd">
+        <button data-cmd="popExplode">爆炸视图… <span>Explode · E</span></button>
+        <button data-cmd="explodeSel">分解所选组件 <span>Explode Selected</span></button>
+        <button data-cmd="popSection">剖切分析… <span>Section · S</span></button>
+        <hr>
+        <button data-cmd="measure">测量 <span>Measure · M</span></button>
+        <button data-cmd="isolate">隔离所选 <span>Isolate</span></button>
+        <button data-cmd="hideSel">隐藏所选 <span>Hide · Del</span></button>
+        <button data-cmd="showAll">全部显示 <span>Show All · H</span></button>
+        <button data-cmd="invertHide">反选隐藏 <span>Invert</span></button>
+        <hr>
+        <button data-cmd="annotMode">添加标注 <span>Annotation</span></button>
+        <button data-cmd="popPeel">剥离模式… <span>Peel Layers</span></button>
+      </div>
+    </div>
+    <div class="menu"><button class="mbtn">动画 <i>ANIMATION</i></button>
+      <div class="mdd">
+        <button data-cmd="tour">推进系统教学漫游 <span>Guided Tour</span></button>
+        <button data-cmd="propAnim">推进系统演示 <span>Propulsion Demo</span></button>
+        <button data-cmd="flowAll">管路流动动画 <span>Pipeline Flow</span></button>
+        <hr>
+        <button data-cmd="popDecks">甲板浏览器… <span>Deck Explorer</span></button>
+        <button data-cmd="popComps">舱室查看… <span>Compartments</span></button>
+        <button data-cmd="popSystems">系统面板… <span>Systems</span></button>
+        <button data-cmd="walk">行走漫游 <span>Walkthrough · W</span></button>
+      </div>
+    </div>
+    <div class="menu"><button class="mbtn">工具 <i>TOOLS</i></button>
+      <div class="mdd">
+        <button data-cmd="shotDark">截图 · 深色背景 <span>PNG</span></button>
+        <button data-cmd="shotWhite">截图 · 白色背景 <span>PNG</span></button>
+        <button data-cmd="shotAlpha">截图 · 透明背景 <span>PNG</span></button>
+        <hr>
+        <button data-cmd="popBkm">相机书签… <span>Bookmarks</span></button>
+        <button data-cmd="heatmap">温度热力图 <span>Heatmap (Demo)</span></button>
+        <button data-cmd="hotspots">信息热点 <span>Hotspots</span></button>
+        <hr>
+        <button data-cmd="loadGlb">加载 GLB 模型… <span>Load Model</span></button>
+        <button data-cmd="loadBuiltinShip">加载 Blender 精细船模 <span>Fine Ship Model</span></button>
+        <button data-cmd="help">帮助 / 快捷键 <span>F1</span></button>
+      </div>
+    </div>
+  </nav>
+
+  <div id="searchWrap">
+    <input id="searchBox" type="text" placeholder="搜索船舶部件… (pump / engine / 舱)" autocomplete="off">
+    <div id="searchDrop"></div>
+  </div>
+
+  <div id="topBtns">
+    <button id="btnUndo"  title="撤销 (Ctrl+Z)">↩</button>
+    <button id="btnRedo"  title="重做 (Ctrl+Y)">↪</button>
+    <button id="btnLoad"  title="加载 GLB 模型">📁</button>
+    <button id="btnShot"  title="截图 (P)">📷</button>
+    <button id="btnHelp"  title="帮助 (F1)">?</button>
+  </div>
+</header>
+
+<!-- ══════════ 左侧面板 ══════════ -->
+<aside id="leftPanel">
+  <div class="tabs">
+    <button class="tab on" data-tab="tree">结构树</button>
+    <button class="tab" data-tab="bom">BOM</button>
+    <button class="tab" data-tab="peel">剥离</button>
+  </div>
+  <div id="treePanel" class="tpanel on">
+    <div id="treeScroll"></div>
+  </div>
+  <div id="bomPanel" class="tpanel">
+    <div class="prow hud-hint">工程物料清单 · 按系统汇总</div>
+    <div id="bomScroll"></div>
+  </div>
+  <div id="peelPanel" class="tpanel">
+    <div class="prow hud-hint">逐层剥离 · 像解剖一样查看船舶</div>
+    <div id="peelBtns"></div>
+    <div id="peelDesc" class="prow hud-hint"></div>
+  </div>
+</aside>
+
+<!-- ══════════ 视口 ══════════ -->
+<main id="vp"></main>
+
+<!-- 视口悬浮工具条 -->
+<div id="qbar">
+  <button data-cmd="popExplode" title="爆炸视图 (E)">爆</button>
+  <button data-cmd="popSection" title="剖切分析 (S)">剖</button>
+  <button data-cmd="xray"       title="X-Ray (X)">透</button>
+  <button data-cmd="popDecks"   title="甲板浏览器">甲</button>
+  <button data-cmd="popComps"   title="舱室查看">舱</button>
+  <button data-cmd="popSystems" title="管路系统">系</button>
+  <button data-cmd="measure"    title="测量 (M)">测</button>
+  <button data-cmd="walk"       title="行走漫游 (W)">走</button>
+  <button data-cmd="fit"        title="适配视图 (F)">适</button>
+  <button data-cmd="focusSel"   title="聚焦所选">焦</button>
+  <button data-cmd="resetAll"   title="复位 (R)">重</button>
+</div>
+
+<!-- 悬浮弹出面板 -->
+<div id="pops">
+  <div class="pop" id="pop-explode">
+    <div class="pt">爆炸视图 EXPLODED VIEW <button class="px">✕</button></div>
+    <div class="pb">
+      <label class="lb">爆炸程度 <span id="exVal" class="mono">0%</span></label>
+      <input type="range" id="exSlider" min="0" max="100" value="0">
+      <div class="chips" id="exLevels">
+        <button data-l="0">L0 整船</button><button data-l="18">L1</button>
+        <button data-l="38">L2</button><button data-l="60">L3</button>
+        <button data-l="80">L4</button><button data-l="100">L5 零件</button>
+      </div>
+      <label class="lb">分解方式</label>
+      <div class="chips" id="exModes">
+        <button data-m="axis" class="on">轴向 Ship Axis</button>
+        <button data-m="radial">放射 Radial</button>
+      </div>
+      <div class="btnrow">
+        <button class="ok" data-cmd="explodeOn">展开 EXPLODE</button>
+        <button data-cmd="assemble">装配 ASSEMBLE</button>
+      </div>
+      <div class="hud-hint">选中组件后可用「分解所选」做组件级解体（如主机）</div>
+    </div>
+  </div>
+
+  <div class="pop" id="pop-section">
+    <div class="pt">剖切分析 SECTION <button class="px">✕</button></div>
+    <div class="pb">
+      <div class="chips" id="secModes">
+        <button data-m="off" class="on">关闭</button>
+        <button data-m="x">横剖 Transverse</button>
+        <button data-m="z">纵剖 Longitudinal</button>
+        <button data-m="y">水平 Horizontal</button>
+        <button data-m="box">剖面盒 Box</button>
+      </div>
+      <div id="secSingle">
+        <label class="lb">剖切位置 <span id="secVal" class="mono"></span></label>
+        <input type="range" id="secSlider" min="-110" max="110" value="0">
+        <div class="hud-hint" id="secHint">沿船长拖动，查看不同肋位横剖面</div>
+      </div>
+      <div id="secBoxUI" style="display:none">
+        <div class="grid2">
+          <label class="lb sm">X Min <span class="mono" id="bx0v"></span><input type="range" class="bxr" data-b="0" min="-120" max="120" value="-120"></label>
+          <label class="lb sm">X Max <span class="mono" id="bx1v"></span><input type="range" class="bxr" data-b="1" min="-120" max="120" value="120"></label>
+          <label class="lb sm">Y Min <span class="mono" id="by0v"></span><input type="range" class="bxr" data-b="2" min="-30" max="60" value="-30"></label>
+          <label class="lb sm">Y Max <span class="mono" id="by1v"></span><input type="range" class="bxr" data-b="3" min="-30" max="60" value="60"></label>
+          <label class="lb sm">Z Min <span class="mono" id="bz0v"></span><input type="range" class="bxr" data-b="4" min="-60" max="60" value="-60"></label>
+          <label class="lb sm">Z Max <span class="mono" id="bz1v"></span><input type="range" class="bxr" data-b="5" min="-60" max="60" value="60"></label>
+        </div>
+      </div>
+      <label class="ck"><input type="checkbox" id="secVisual" checked> 显示剖切平面</label>
+    </div>
+  </div>
+
+  <div class="pop" id="pop-xray">
+    <div class="pt">外壳透明 X-RAY <button class="px">✕</button></div>
+    <div class="pb">
+      <label class="lb">外壳不透明度 <span id="xrVal" class="mono">100%</span></label>
+      <input type="range" id="xrSlider" min="5" max="100" value="100">
+      <label class="ck"><input type="checkbox" id="xrHull" checked> 船体外壳</label>
+      <label class="ck"><input type="checkbox" id="xrSuper" checked> 上层建筑</label>
+      <label class="ck"><input type="checkbox" id="xrHatch" checked> 舱口盖 / 甲板</label>
+      <div class="chips">
+        <button data-xr="100">实体</button><button data-xr="45">半透</button>
+        <button data-xr="15">X-Ray</button><button data-xr="7">深度透视</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pop" id="pop-decks">
+    <div class="pt">甲板浏览器 DECKS <button class="px">✕</button></div>
+    <div class="pb"><div class="btnlist" id="deckList"></div>
+      <div class="hud-hint">点击甲板：自动在对应高度剖切并俯视</div>
+    </div>
+  </div>
+
+  <div class="pop" id="pop-comps">
+    <div class="pt">舱室查看 COMPARTMENTS <button class="px">✕</button></div>
+    <div class="pb"><div class="btnlist" id="compList"></div>
+      <div class="hud-hint">点击舱室：隐藏外壳 · 相机飞入</div>
+    </div>
+  </div>
+
+  <div class="pop" id="pop-systems">
+    <div class="pt">管路系统 PIPING <button class="px">✕</button></div>
+    <div class="pb">
+      <div class="btnrow"><button data-cmd="flowAll" id="flowBtn">▶ 流动动画</button><button data-cmd="isoPiping">仅显示管路</button></div>
+      <div class="btnlist" id="sysList"></div>
+    </div>
+  </div>
+
+  <div class="pop" id="pop-bkm">
+    <div class="pt">相机书签 BOOKMARKS <button class="px">✕</button></div>
+    <div class="pb">
+      <div class="btnrow"><input id="bkmName" type="text" placeholder="书签名称…"><button class="ok" id="bkmSave">保存</button></div>
+      <div class="btnlist" id="bkmList"></div>
+    </div>
+  </div>
+
+  <div class="pop" id="pop-peel2">
+    <div class="pt">剥离模式 PEEL <button class="px">✕</button></div>
+    <div class="pb">
+      <div class="btnrow"><button id="peelPrev">◀ 外层</button><button id="peelNext" class="ok">内层 ▶</button></div>
+      <div id="peelSteps" class="btnlist"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 右侧面板 ══════════ -->
+<aside id="rightPanel">
+  <div class="tabs">
+    <button class="tab on" data-tab="prop">属性</button>
+    <button class="tab" data-tab="measure">测量</button>
+    <button class="tab" data-tab="annot">标注</button>
+    <button class="tab" data-tab="bkm">书签</button>
+  </div>
+  <div id="propPanel" class="tpanel on"><div class="prow hud-hint">点击模型或结构树查看部件属性</div><div id="propBody"></div></div>
+  <div id="measurePanel" class="tpanel">
+    <div class="chips" id="msModes">
+      <button data-mm="dist" class="on">距离</button>
+      <button data-mm="angle">角度</button>
+      <button data-mm="point">坐标</button>
+    </div>
+    <div class="btnrow"><div class="chips" id="msUnits"><button data-u="m" class="on">m</button><button data-u="mm">mm</button></div>
+      <button id="msClear">清除</button></div>
+    <div class="hud-hint">距离：点选两点 · 角度：点选三点（中间为顶点）</div>
+    <div id="msList"></div>
+  </div>
+  <div id="annotPanel" class="tpanel">
+    <div class="btnrow"><button class="ok" data-cmd="annotMode">＋ 添加标注</button><button id="annotClear">清空</button></div>
+    <div class="hud-hint">开启后在模型上点击放置标注点</div>
+    <div id="annotList"></div>
+  </div>
+  <div id="bkmPanel" class="tpanel">
+    <div class="btnrow"><input id="bkmName2" type="text" placeholder="书签名称…"><button class="ok" id="bkmSave2">保存</button></div>
+    <div id="bkmList2" class="btnlist"></div>
+  </div>
+</aside>
+
+<!-- 视图立方 -->
+<canvas id="vcube" width="120" height="120" title="视图立方 · 点击面切换视角"></canvas>
+
+<!-- 行走提示 -->
+<div id="walkHint" class="hidden">
+  <b>行走漫游模式</b>　W/A/S/D 移动 · Q/E 升降 · Shift 加速 · 鼠标转向 · Esc 退出
+  <button id="walkExit">退出漫游</button>
+</div>
+<div id="cross" class="hidden">+</div>
+
+<!-- 教学漫游字幕 -->
+<div id="tourCap" class="hidden"><b id="tcStep"></b><span id="tcTitle"></span><p id="tcDesc"></p></div>
+
+<!-- 底部时间轴 -->
+<div id="timeline" class="hidden">
+  <button id="tlPrev">⏮</button>
+  <button id="tlPlay">▶</button>
+  <button id="tlNext">⏭</button>
+  <div id="tlTrack"><div id="tlFill"></div><div id="tlTicks"></div></div>
+  <span id="tlLabel" class="mono"></span>
+  <select id="tlSpeed"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option></select>
+  <button id="tlClose">✕</button>
+</div>
+
+<!-- 状态栏 -->
+<footer id="status">
+  <span class="st">船坐标 <b class="mono" id="coordXYZ">X +0.0 · Y +0.0 · Z +0.0 m</b></span>
+  <span class="st sep"></span>
+  <span class="st" id="hint">左键旋转 · 右键平移 · 滚轮缩放 · 双击聚焦 · 悬停查看部件</span>
+  <span class="st grow"></span>
+  <span class="st">对象 <b class="mono" id="stObj">0</b></span>
+  <span class="st">三角形 <b class="mono" id="stTri">0</b></span>
+  <span class="st">FPS <b class="mono" id="stFps">--</b></span>
+  <span class="st">模型 <b id="stModel">DEMO_SHIP_LNG·200m</b></span>
+</footer>
+
+<!-- 悬浮件 -->
+<div id="tip" class="hidden"></div>
+<div id="hsCard" class="hidden"></div>
+<div id="ctxMenu" class="hidden"></div>
+<div id="toast" class="hidden"></div>
+<div id="annotEditor" class="hidden"><input id="annotInput" placeholder="标注内容…"><div class="btnrow"><button class="ok" id="annotOk">确定</button><button id="annotCancel">取消</button></div></div>
+<div id="helpModal" class="hidden"></div>
+<div id="loader"><div class="ld-ring"></div><div id="loaderMsg">正在初始化三维引擎…</div></div>
+<input type="file" id="fileGlb" accept=".glb,.gltf" style="display:none">
+
+<script src="js/model.js?v=8"></script>
+<script src="js/app-core.js?v=8"></script>
+<script src="js/app-features.js?v=8"></script>
+<script type="module">
+/* ── Three.js 动态加载（CDN 双源回退，与 rocket 项目同方案） ── */
+const CDNS = ['https://cdn.jsdelivr.net/npm/three@0.170.0/','https://unpkg.com/three@0.170.0/'];
+const $msg = document.getElementById('loaderMsg');
+async function loadLibs(){
+  let base=null, threeUrl=null;
+  for(const b of CDNS){
+    try{ await import(b+'build/three.module.js'); base=b; threeUrl=b+'build/three.module.js'; break; }catch(e){}
+  }
+  if(!base) throw new Error('Three.js CDN 不可达');
+  /* 递归 blob 化：把 addon 及其相对依赖中的裸模块名 'three' 全部替换为 CDN 绝对地址 */
+  const blobCache=new Map();
+  const RE=/(from\s*|import\s*)(['"])([^'"]+)\2/g;
+  async function addonBlob(path){
+    if(blobCache.has(path))return blobCache.get(path);
+    blobCache.set(path,path);               // 防循环
+    const url=base+path;
+    const src=await (await fetch(url)).text();
+    const specs=new Set();
+    let m; const re=new RegExp(RE.source,'g');
+    while((m=re.exec(src))){ const s=m[3]; if(s==='three'||s.startsWith('.'))specs.add(s); }
+    const resolved={};
+    for(const s of specs){
+      if(s==='three'){ resolved[s]=threeUrl; continue; }
+      const abs=new URL(s,url).href;
+      resolved[s]=abs.startsWith(base)?await addonBlob(abs.slice(base.length)):abs;
+    }
+    const patched=src.replace(new RegExp(RE.source,'g'),(mm,p,q,s)=>
+      resolved[s]?p+q+resolved[s]+q:mm);
+    const blob=URL.createObjectURL(new Blob([patched],{type:'text/javascript'}));
+    blobCache.set(path,blob);
+    return blob;
+  }
+  const OrbitControls=(await import(await addonBlob('examples/jsm/controls/OrbitControls.js'))).OrbitControls;
+  const GLTFLoader=(await import(await addonBlob('examples/jsm/loaders/GLTFLoader.js'))).GLTFLoader;
+  let RoomEnvironment=null;
+  try{ RoomEnvironment=(await import(await addonBlob('examples/jsm/environments/RoomEnvironment.js'))).RoomEnvironment; }catch(e){}
+  return { THREE: await import(threeUrl), OrbitControls, GLTFLoader, RoomEnvironment };
+}
+loadLibs().then(libs=>{
+  window.__LIBS = libs;
+  window.dispatchEvent(new Event('three-ready'));
+}).catch(err=>{
+  $msg.innerHTML = '三维引擎加载失败：'+err.message+'<br><small>请检查网络后刷新页面（需访问 jsdelivr / unpkg CDN）</small>';
+  document.querySelector('.ld-ring')?.remove();
+});
+</script>
+</body>
+</html>
