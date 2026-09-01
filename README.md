@@ -49,6 +49,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/build_ship_blender
 
 GLB 节点优先使用 Blender `extras` 中的 `id/name/en/system/kind`；重复 ID 会优先绑定到系统/子装配节点，而不是其下的单个网格。推进和导览路径由 `ME-001 / GB-001 / SH-001 / PP-001` 的实际包围盒中心生成，管路粒子由活动模型中的 `PIPE-*` 网格段生成；若外部模型缺少这些语义节点，相关动画会明确提示不可用，不会在旧示范船坐标上“漂移”。
 
+## Blender 与网页渲染同步
+
+默认加载的 Blender 精细船模会复用 Blender 预览的右舷高位斜视相机、KEY/FILL/RIM/FRONT 四组展示光、深色世界背景、海面高度与材质参数，以及 AgX 风格色调映射。相机、灯光和海面属于网页运行时展示层，不会混入 GLB 的工程几何和元数据；因此结构树、BOM、选择、爆炸、剖切和动画仍然只作用于实际模型节点。浏览器中的 UI 面板会占用画布空间，最终构图与 Blender 独立预览保持参数一致但不保证像素级相同。用户导入的其他 GLB 继续使用平台的通用相机、灯光和海面适配。
+
 ## 核心能力
 
 | 分类 | 功能 |

@@ -980,6 +980,7 @@ A._clearImportedState=function(){
   if(A._propPts){A._propPts.parent?.remove(A._propPts);A._propPts=null;}
   A._propCurve=null;A.propOn=false;A.flowOn=false;A.externalFlow=[];
   if(A.tourSteps)A.tourSteps.forEach(s=>{delete s.baseCam;});
+  App.clearBlenderPresentation?.();
   if(App.externalModel)App.model.root.remove(App.externalModel);
   App.externalModel=null;App.externalLoaded=false;
   App.externalRegistry=[];App.externalByIdMap={};
@@ -988,6 +989,7 @@ A._clearImportedState=function(){
   App.byIdMap=App.activeByIdMap;
   S.undoStack.length=0;S.redoStack.length=0;
   App.model.root.children.forEach(c=>{if(c.userData.meta)c.visible=true;});
+  if(App.water)App.water.visible=true;
   App.hotspots.forEach(h=>h.visible=true);
 };
 
@@ -1044,6 +1046,15 @@ A._attachImportedGLTF=function(gltf,fileName){
   App.externalModel=wrap;
   App.externalLoaded=true;
   App.scene.updateMatrixWorld(true);
+  if(isBuiltin){
+    /* 只有项目自带的 Blender GLB 使用其参考相机/灯光/海面；
+       任意用户导入的 GLB 保留平台的通用适配视图。 */
+    if(App.water)App.water.visible=false;
+    App.applyBlenderPresentation(wrap,center,scale);
+  }else{
+    if(App.water)App.water.visible=true;
+    A.fitView(wrap);
+  }
   App.externalByIdMap=externalMap;
   App.registry=App.externalRegistry;
   App.activeByIdMap=App.externalByIdMap;
@@ -1056,7 +1067,6 @@ A._attachImportedGLTF=function(gltf,fileName){
   App.computeExplode();
   A.refreshTourTargets();
   App.updateStats();
-  A.fitView(wrap);
   $('#stModel').textContent=isBuiltin?'BLENDER 精细船模 · 200M':String(fileName||'外部模型').toUpperCase();
   App.pushUndo();
   A.toast('已接入 '+modelName+' · '+n+' 个可识别节点');

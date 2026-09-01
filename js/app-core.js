@@ -24,6 +24,35 @@ window.App = {
 };
 const S=App.state;
 
+/* ───────── Blender 展示渲染基线 ─────────
+   Blender 使用 Z-up；GLTF/Web 使用 Y-up。所有展示辅助物都从这份基线
+   计算，避免预览图、网页相机和海面各自维护一套不一致的参数。 */
+App.renderProfile={
+  camera:{position:[205,-190,105],target:[0,0,6],lensMm:48,sensorWidthMm:36},
+  ocean:{height:-9.55,size:340,color:'#041a2a',opacity:.62,metalness:.35,roughness:.18},
+  lights:{
+    KEY:{position:[45,-100,145],color:'#ffe0bd',intensity:1.6},
+    FILL:{position:[-95,85,92],color:'#85b8ff',intensity:.55},
+    RIM:{position:[20,30,125],color:'#5a96ff',intensity:.7},
+    FRONT:{position:[0,-150,55],color:'#add0ff',intensity:.5}
+  },
+  lightTarget:[0,0,5],
+  world:{background:'#05080f',environmentStrength:.28},
+  toneMappingExposure:1
+};
+App.blenderToGltf=function(v){
+  /* Blender (X,Y,Z) -> exported GLTF (X,Z,-Y). */
+  return new App.T.Vector3(v[0],v[2],-v[1]);
+};
+App.presentationFov=function(aspect){
+  const c=App.renderProfile.camera;
+  const hFov=2*Math.atan(c.sensorWidthMm/(2*c.lensMm));
+  return 2*Math.atan(Math.tan(hFov/2)/Math.max(aspect,.1))*180/Math.PI;
+};
+App.presentationRig=null;
+App.presentationOcean=null;
+App.presentationActive=false;
+
 /* ───────────────────────── 启动 ───────────────────────── */
 window.addEventListener('three-ready',()=>App.start(window.__LIBS));
 
@@ -63,15 +92,25 @@ App.start=function({THREE,OrbitControls,GLTFLoader,RoomEnvironment}){
   controls.minDistance=6; controls.maxDistance=900; controls.maxPolarAngle=Math.PI*.52;
   App.controls=controls;
 
-  /* 灯光 */
-  scene.add(new T.HemisphereLight('#9db8d2','#16222f',.75));
+  /* 灯光：程序化示范船的原始网页灯光，外部 Blender 模型加载后切换到展示灯光。 */
+  const baseLights=new T.Group(); baseLights.name='Web Base Lighting'; scene.add(baseLights);
+  const hemi=new T.HemisphereLight('#9db8d2','#16222f',.75); baseLights.add(hemi);
   const sun=new T.DirectionalLight('#ffffff',1.7);
   sun.position.set(150,230,90); sun.castShadow=true;
   sun.shadow.mapSize.set(2048,2048); sun.shadow.bias=-.0004;
   Object.assign(sun.shadow.camera,{left:-170,right:170,top:170,bottom:-170,near:20,far:600});
-  scene.add(sun);
+  baseLights.add(sun);
   const fill=new T.DirectionalLight('#7fb2e8',.32);
-  fill.position.set(-140,90,-150); scene.add(fill);
+  fill.position.set(-140,90,-150); baseLights.add(fill);
+  App.baseLights=baseLights;
+  App.baseRenderState={
+    toneMapping:renderer.toneMapping,
+    toneMappingExposure:renderer.toneMappingExposure,
+    background:scene.background,
+    fog:scene.fog,
+    environment:scene.environment,
+    environmentIntensity:'environmentIntensity' in scene?scene.environmentIntensity:null
+  };
 
   /* 模型 */
   const model=ShipBuilder.build(T);
@@ -162,10 +201,100 @@ App.start=function({THREE,OrbitControls,GLTFLoader,RoomEnvironment}){
   });
 
   addEventListener('resize',()=>{
+    if(App.presentationActive&&!App.oCam)cam.fov=App.presentationFov(innerWidth/Math.max(innerHeight,1));
     cam.aspect=innerWidth/innerHeight; cam.updateProjectionMatrix();
     if(App.oCam){App.oCam.left=-cam.aspect*App.oH;App.oCam.right=cam.aspect*App.oH;App.oCam.top=App.oH;App.oCam.bottom=-App.oH;App.oCam.updateProjectionMatrix();}
     renderer.setSize(innerWidth,innerHeight);
   });
+};
+
+App._presentationPoint=function(v,center,scale){
+  return App.blenderToGltf(v).sub(center).multiplyScalar(scale);
+};
+App._setPresentationEnvironment=function(enabled){
+  if(!App.renderer||!App.scene)return;
+  if(enabled){
+    if(App.baseLights)App.baseLights.visible=false;
+    App.scene.background=new App.T.Color(App.renderProfile.world.background);
+    App.scene.fog=null;
+    /* Blender 预览没有 RoomEnvironment HDRI；金属表面只接受深色世界与展示灯。 */
+    App.scene.environment=null;
+    App.renderer.toneMapping=App.T.AgXToneMapping??App.T.ACESFilmicToneMapping;
+    App.renderer.toneMappingExposure=App.renderProfile.toneMappingExposure;
+    if('environmentIntensity' in App.scene)App.scene.environmentIntensity=App.renderProfile.world.environmentStrength;
+    return;
+  }
+  if(App.baseLights)App.baseLights.visible=true;
+  const b=App.baseRenderState;
+  if(!b)return;
+  App.renderer.toneMapping=b.toneMapping;
+  App.renderer.toneMappingExposure=b.toneMappingExposure;
+  App.scene.background=b.background;
+  App.scene.fog=b.fog;
+  App.scene.environment=b.environment;
+  if('environmentIntensity' in App.scene&&b.environmentIntensity!==null)
+    App.scene.environmentIntensity=b.environmentIntensity;
+};
+App.buildBlenderPresentationRig=function(wrap,center,scale){
+  const T=App.T,p=App.renderProfile,rig=new T.Group();
+  rig.name='BlenderPresentationRig';
+  rig.userData.selectable=false;rig.userData.presentation=true;
+  /* wrap.scale applies the same normalization as the imported GLB; this local
+     translation centers every Blender-space reference point with the model. */
+  rig.position.copy(center).multiplyScalar(-1);
+  wrap.add(rig);
+
+  const target=T.Object3D?new T.Object3D():new T.Group();
+  target.name='Blender Presentation Target';
+  target.position.copy(App.blenderToGltf(p.lightTarget));
+  rig.add(target);
+  Object.entries(p.lights).forEach(([id,spec])=>{
+    const light=new T.DirectionalLight(spec.color,spec.intensity);
+    light.name='Blender '+id+' Light';
+    light.position.copy(App.blenderToGltf(spec.position));
+    light.target=target;
+    if(id==='KEY'){
+      light.castShadow=true;
+      light.shadow.mapSize.set(2048,2048);
+      light.shadow.bias=-.0004;
+      Object.assign(light.shadow.camera,{left:-170,right:170,top:170,bottom:-170,near:20,far:600});
+    }
+    rig.add(light);
+  });
+  const ambient=new T.HemisphereLight('#9db8d2','#16222f',.22);
+  ambient.name='Blender World Light'; rig.add(ambient);
+
+  const o=p.ocean;
+  const ocean=new T.Mesh(new T.PlaneGeometry(2,2),new T.MeshStandardMaterial({
+    color:o.color,transparent:true,opacity:o.opacity,metalness:o.metalness,
+    roughness:o.roughness,side:T.DoubleSide
+  }));
+  ocean.name='Presentation Ocean';
+  ocean.position.copy(App.blenderToGltf([0,o.height,0]));
+  ocean.rotation.x=-Math.PI/2;
+  ocean.scale.set(o.size/2,o.size/2,1);
+  ocean.receiveShadow=true;
+  ocean.userData.selectable=false;ocean.userData.presentation=true;
+  rig.add(ocean);
+  App.presentationRig=rig; App.presentationOcean=ocean;
+  return rig;
+};
+App.applyBlenderPresentation=function(wrap,center,scale){
+  if(!wrap||!App.cam||!App.controls)return;
+  const T=App.T,p=App.renderProfile.camera;
+  App._setPresentationEnvironment(true);
+  App.buildBlenderPresentationRig(wrap,center,scale);
+  App.cam.position.copy(App._presentationPoint(p.position,center,scale));
+  App.controls.target.copy(App._presentationPoint(p.target,center,scale));
+  App.cam.fov=App.presentationFov(App.cam.aspect||innerWidth/Math.max(innerHeight,1));
+  App.cam.updateProjectionMatrix();
+  App.controls.update();
+  App.fly=null; App.presentationActive=true;
+};
+App.clearBlenderPresentation=function(){
+  if(App.presentationRig?.parent)App.presentationRig.parent.remove(App.presentationRig);
+  App.presentationRig=null; App.presentationOcean=null; App.presentationActive=false;
+  App._setPresentationEnvironment(false);
 };
 
 /* 当前平台显示的模型根。外部 Blender 模型接入后，结构树、BOM、爆炸和幽灵模式只针对它工作。 */
@@ -802,7 +931,7 @@ App.run=function(cmd,arg){
     vStern:()=>A.preset('vStern'),vPort:()=>A.preset('vPort'),vStbd:()=>A.preset('vStbd'),
     ortho:()=>A.orthoToggle(),
     axes:()=>{App.axes.visible=!App.axes.visible;App.toast('坐标轴 '+(App.axes.visible?'开':'关'));},
-    water:()=>{App.water.visible=!App.water.visible;},
+    water:()=>{const w=App.presentationOcean||App.water;if(w)w.visible=!w.visible;},
     popExplode:()=>{A.showPop('pop-explode');},
     popSection:()=>{A.showPop('pop-section');},
     popXray:()=>A.showPop('pop-xray'),
